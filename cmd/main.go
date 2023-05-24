@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
@@ -22,6 +21,5 @@ func main() {
 	mux.Get("/getnote", routes.GetNote)
 	mux.Post("/createnote", routes.CreateNote)
 	mux.Delete("/deletenote", routes.DeleteNote)
-	host:=os.Getenv("running_host")
-	http.ListenAndServe(host, mux)
+	http.ListenAndServe(":8080", mux)
 }

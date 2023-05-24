@@ -32,7 +32,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	var user models.Signup
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		fmt.Println("Invalid Error response")
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "400 Bad Request")
 		return
 	}
 	fmt.Println(user.Name, user.Email, user.Password)
@@ -40,6 +41,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	email := user.Email
 	password := user.Password
 	database.InsertIntoUser(name, email, password)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "200 OK")
 
 }
 
@@ -48,7 +51,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	var user models.Login
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		fmt.Println("Invalid Error response")
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "400 Bad Request")
 		return
 	}
 	email := user.Email
@@ -59,7 +63,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Error checking user: %v", err)
 	}
 	if !userExists {
-		fmt.Println("No User found")
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "401 Unauthorized")
 		return
 
 	}
@@ -68,6 +73,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Session id not generated")
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "200 Ok")
 	sessionId=make(map[int]Session_Id)
 	sess:=Session_Id{
 		session:session,
@@ -88,6 +96,12 @@ func GetNote(w http.ResponseWriter, r *http.Request) {
 	}
 	length := len(notes)
 	mail:=sessionId[0].email
+	if  mail==""{
+		w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprint(w, "401 Unauthorized")
+			return
+
+	}
 
 	for i := 0; i < length; i++ {
 		if notes[i].Email == mail {
@@ -121,6 +135,12 @@ func CreateNote(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &note)
 	email:=sessionId[0].email
 	title:=note.Title
+	if  email==""{
+		w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprint(w, "401 Unauthorized")
+			return
+
+	}
 
 	err=database.SaveData(title,email)
 	if err!=nil{
@@ -137,12 +157,21 @@ func CreateNote(w http.ResponseWriter, r *http.Request) {
 func DeleteNote(w http.ResponseWriter, r *http.Request) {
 
 	email:=sessionId[0].email
+	if  email==""{
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "401 Unauthorized")
+			return
+
+	}
 
 	err:=database.DeleteData(email)
 	if err!=nil{
 		log.Fatalf("Data is not deleted")
 		return;
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "200 Ok")
 	fmt.Println("Data Deleted Successfully")
 
 }
