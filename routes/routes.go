@@ -8,15 +8,17 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
 	"github.com/navneetshukl/Golang_notes_API/database"
 	"github.com/navneetshukl/Golang_notes_API/models"
 )
-type Session_Id struct{
-	session string
-	email string
-}
-var sessionId map[int]Session_Id
 
+type Session_Id struct {
+	session string
+	email   string
+}
+
+var sessionId map[int]Session_Id
 
 func generateSessionID() (string, error) {
 	b := make([]byte, 32)
@@ -57,7 +59,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 	email := user.Email
 	password := user.Password
-	fmt.Println(email , password)
+	fmt.Println(email, password)
 	userExists, err := database.CheckUser(email, password)
 	if err != nil {
 		log.Fatalf("Error checking user: %v", err)
@@ -76,12 +78,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "200 Ok")
-	sessionId=make(map[int]Session_Id)
-	sess:=Session_Id{
-		session:session,
-		email:email,
+	sessionId = make(map[int]Session_Id)
+	sess := Session_Id{
+		session: session,
+		email:   email,
 	}
-	sessionId[0]=sess
+	sessionId[0] = sess
 	fmt.Println(session)
 	fmt.Println("Login Successfully")
 
@@ -90,25 +92,26 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func GetNote(w http.ResponseWriter, r *http.Request) {
 	cnt := 0
 	notes, err := database.GetDataFromNotes()
-	if err!=nil{
+	if err != nil {
 		log.Fatalf("No data found")
 		return
 	}
 	length := len(notes)
-	mail:=sessionId[0].email
-	if  mail==""{
+	mail := sessionId[0].email
+	if mail == "" {
 		w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "401 Unauthorized")
-			return
+		fmt.Fprint(w, "401 Unauthorized")
+		return
 
 	}
+	//fmt.Println(notes)
 
 	for i := 0; i < length; i++ {
 		if notes[i].Email == mail {
 			cnt += 1
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(models.StudentNotes[i].Title)
+			json.NewEncoder(w).Encode(notes[i].Title)
 			fmt.Println(notes[i].Title)
 		}
 
@@ -133,17 +136,17 @@ func CreateNote(w http.ResponseWriter, r *http.Request) {
 
 	var note models.Notes
 	json.Unmarshal(body, &note)
-	email:=sessionId[0].email
-	title:=note.Title
-	if  email==""{
+	email := sessionId[0].email
+	title := note.Title
+	if email == "" {
 		w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "401 Unauthorized")
-			return
+		fmt.Fprint(w, "401 Unauthorized")
+		return
 
 	}
 
-	err=database.SaveData(title,email)
-	if err!=nil{
+	err = database.SaveData(title, email)
+	if err != nil {
 		log.Fatalf("Data is not saved")
 	}
 	// Send a 201 created response
@@ -156,18 +159,18 @@ func CreateNote(w http.ResponseWriter, r *http.Request) {
 
 func DeleteNote(w http.ResponseWriter, r *http.Request) {
 
-	email:=sessionId[0].email
-	if  email==""{
+	email := sessionId[0].email
+	if email == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprint(w, "401 Unauthorized")
-			return
+		return
 
 	}
 
-	err:=database.DeleteData(email)
-	if err!=nil{
+	err := database.DeleteData(email)
+	if err != nil {
 		log.Fatalf("Data is not deleted")
-		return;
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
